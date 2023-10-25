@@ -2,8 +2,10 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QTreeView, QTextEdit, QFileDialog, QFileSystemModel, QGroupBox, QScrollArea
 )
-from PyQt5.QtCore import QDir, Qt
+from PyQt5.QtCore import QDir
+from PyQt5.QtGui import QIcon
 import os
+
 
 
 def get_tree_structure(path, ignored_dirs, indent=0):
@@ -61,7 +63,7 @@ def summarize_files():
                         summarized_text += f"{child_path}\n{content}\n\n"
     
     # Wrap the summarized text with the start and end texts
-    summarized_text = start_text_edit.text() + "\n\n" + summarized_text + "\n\n" + end_text_edit.text()
+    summarized_text = start_text_edit.toPlainText() + "\n\n" + summarized_text + "\n\n" + end_text_edit.toPlainText()
 
     text_edit.setText(summarized_text)
     text_edit.setText(summarized_text)
@@ -79,6 +81,11 @@ def update_char_count():
 # Create the application
 app = QApplication([])
 
+# Set the application icon
+icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icon.png')
+app.setWindowIcon(QIcon(icon_path))
+
+# Create the main window
 window = QWidget()
 window.setWindowTitle("ChatGPT Coding Helper")
 window.setToolTip("This tool streamlines the process of working with LLMs like ChatGPT for coding. \n"
@@ -181,8 +188,7 @@ char_count_label = QLabel("Character Count: 0")
 text_edit.textChanged.connect(update_char_count)
 summary_layout.addWidget(char_count_label)
 
-
-
+# Set the initial state of the collapsible groups
 window.resize(1000, 800)  # Set an initial window size
 window.show()
 
