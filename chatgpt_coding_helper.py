@@ -82,7 +82,7 @@ def update_char_count():
 app = QApplication([])
 
 # Set the application icon
-icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icon.png')
+icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'graphics/icon.png')
 app.setWindowIcon(QIcon(icon_path))
 
 # Create the main window
