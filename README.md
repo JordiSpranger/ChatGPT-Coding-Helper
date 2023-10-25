@@ -1,7 +1,5 @@
 # ChatGPT-Coding-Helper
 
-# ChatGPT Coding Helper
-
 ChatGPT Coding Helper is a lightweight and user-friendly GUI tool that streamlines the process of working with large language models like ChatGPT for coding tasks. The tool allows users to select a directory, list its files (including subdirectories), and then choose multiple files from this list. Once the files are selected, the tool summarizes their contents into a single view, which makes iterative coding with ChatGPT even more efficient.
 
 ## Features
