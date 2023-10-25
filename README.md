@@ -50,3 +50,6 @@ This project is open-source and available under the MIT License.
 
 ## Credits
 Developed by [Jordi Spranger](https://github.com/JordiSpranger) with the assistance of OpenAI's ChatGPT.
+
+## Screenshot
+![Screenshot](graphics/ChatGPT_Coding_Helper_.png)
