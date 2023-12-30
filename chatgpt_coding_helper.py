@@ -15,17 +15,8 @@ class CodingHelperTab(QWidget):
         # Create collapsible file selection group
         self.file_selection_group = QGroupBox("File Selection")
         self.file_selection_group.setCheckable(True)
-        self.file_selection_group.setChecked(True)
+        self.file_selection_group.toggled.connect(self.toggle_group_box)
         file_selection_layout = QVBoxLayout()
-
-        # Add Save and Load Buttons
-        self.save_json_btn = QPushButton("Save Texts to JSON")
-        self.save_json_btn.clicked.connect(self.save_to_json)
-        self.layout.addWidget(self.save_json_btn)
-
-        self.load_json_btn = QPushButton("Load Texts from JSON")
-        self.load_json_btn.clicked.connect(self.load_from_json)
-        self.layout.addWidget(self.load_json_btn)
 
         self.folder_btn = QPushButton("Select Folder")
         self.folder_btn.clicked.connect(self.select_folder)
@@ -38,7 +29,6 @@ class CodingHelperTab(QWidget):
         ignored_dirs_layout.addWidget(ignored_dirs_label)
         ignored_dirs_layout.addWidget(self.ignored_dirs_edit)
         file_selection_layout.addLayout(ignored_dirs_layout)
-        # Default .git in ignored directories
         self.ignored_dirs_edit.setText(".git")  # Set .git as the default ignored directory
 
         # Set up the file system model and tree view
@@ -55,7 +45,7 @@ class CodingHelperTab(QWidget):
         # Create collapsible start text group
         self.start_text_group = QGroupBox("Summary Start Text")
         self.start_text_group.setCheckable(True)
-        self.start_text_group.setChecked(True)
+        self.start_text_group.toggled.connect(self.toggle_group_box)
         start_text_layout = QVBoxLayout()
         self.start_text_edit = QTextEdit()
         start_text_layout.addWidget(self.start_text_edit)
@@ -65,7 +55,7 @@ class CodingHelperTab(QWidget):
         # Create collapsible end text group
         self.end_text_group = QGroupBox("Summary End Text")
         self.end_text_group.setCheckable(True)
-        self.end_text_group.setChecked(True)
+        self.end_text_group.toggled.connect(self.toggle_group_box)
         end_text_layout = QVBoxLayout()
         self.end_text_edit = QTextEdit()
         end_text_layout.addWidget(self.end_text_edit)
@@ -75,30 +65,51 @@ class CodingHelperTab(QWidget):
         # Create collapsible summary group
         self.summary_group = QGroupBox("Summary")
         self.summary_group.setCheckable(True)
-        self.summary_group.setChecked(True)
+        self.summary_group.toggled.connect(self.toggle_group_box)
         summary_layout = QVBoxLayout()
-        self.summarize_btn = QPushButton("Summarize Files")
-        self.summarize_btn.clicked.connect(self.summarize_files)
-        summary_layout.addWidget(self.summarize_btn)
         self.text_edit = QTextEdit()
         summary_layout.addWidget(self.text_edit)
         self.summary_group.setLayout(summary_layout)
         self.layout.addWidget(self.summary_group)
 
-        # Add a button for copying the summarized text to clipboard
+        # Group buttons in a single row
+        button_layout = QHBoxLayout()
+        self.save_json_btn = QPushButton("Save Texts to JSON")
+        self.save_json_btn.clicked.connect(self.save_to_json)
+        button_layout.addWidget(self.save_json_btn)
+
+        self.load_json_btn = QPushButton("Load Texts from JSON")
+        self.load_json_btn.clicked.connect(self.load_from_json)
+        button_layout.addWidget(self.load_json_btn)
+
+        self.summarize_btn = QPushButton("Summarize Files")
+        self.summarize_btn.clicked.connect(self.summarize_files)
+        button_layout.addWidget(self.summarize_btn)
+
         self.copy_btn = QPushButton("Copy to Clipboard")
         self.copy_btn.clicked.connect(self.copy_to_clipboard)
-        summary_layout.addWidget(self.copy_btn)
+        button_layout.addWidget(self.copy_btn)
+
+        self.close_btn = QPushButton("Close Session")
+        self.close_btn.clicked.connect(self.close_tab)
+        button_layout.addWidget(self.close_btn)
+
+        # Add button layout to main layout
+        self.layout.addLayout(button_layout)
 
         # Character count label
         self.char_count_label = QLabel("Character Count: 0")
         self.text_edit.textChanged.connect(self.update_char_count)
         summary_layout.addWidget(self.char_count_label)
 
-        # Add Close Session Button
-        self.close_btn = QPushButton("Close Session")
-        self.close_btn.clicked.connect(self.close_tab)
-        self.layout.addWidget(self.close_btn)
+    # Function to toggle visibility of group box content
+    def toggle_group_box(self, checked):
+        group_box = self.sender()
+        if group_box:
+            for i in range(group_box.layout().count()): 
+                widget = group_box.layout().itemAt(i).widget()
+                if widget:
+                    widget.setVisible(checked)
 
     def select_folder(self):
         directory = QFileDialog.getExistingDirectory(None, "Select a folder:")
