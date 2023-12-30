@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox,
     QPushButton, QTreeView, QTextEdit, QFileDialog, QFileSystemModel, QGroupBox, QTabWidget
 )
-from PyQt5.QtCore import QDir
+from PyQt5.QtCore import QDir, QTimer
 from PyQt5.QtGui import QIcon
 import os
 import json
@@ -20,7 +20,9 @@ class CodingHelperTab(QWidget):
 
         self.folder_btn = QPushButton("Select Folder")
         self.folder_btn.clicked.connect(self.select_folder)
+        self.folder_btn.setStyleSheet(default_button_style)
         file_selection_layout.addWidget(self.folder_btn)
+        
 
         # Input for ignored directories
         ignored_dirs_layout = QHBoxLayout()
@@ -76,22 +78,27 @@ class CodingHelperTab(QWidget):
         button_layout = QHBoxLayout()
         self.save_json_btn = QPushButton("Save Texts to JSON")
         self.save_json_btn.clicked.connect(self.save_to_json)
+        self.save_json_btn.setStyleSheet(default_button_style)
         button_layout.addWidget(self.save_json_btn)
 
         self.load_json_btn = QPushButton("Load Texts from JSON")
         self.load_json_btn.clicked.connect(self.load_from_json)
+        self.load_json_btn.setStyleSheet(default_button_style)
         button_layout.addWidget(self.load_json_btn)
 
         self.summarize_btn = QPushButton("Summarize Files")
         self.summarize_btn.clicked.connect(self.summarize_files)
+        self.summarize_btn.setStyleSheet(default_button_style)
         button_layout.addWidget(self.summarize_btn)
 
         self.copy_btn = QPushButton("Copy to Clipboard")
         self.copy_btn.clicked.connect(self.copy_to_clipboard)
+        self.copy_btn.setStyleSheet(default_button_style)
         button_layout.addWidget(self.copy_btn)
 
         self.close_btn = QPushButton("Close Session")
         self.close_btn.clicked.connect(self.close_tab)
+        self.close_btn.setStyleSheet(default_button_style)
         button_layout.addWidget(self.close_btn)
 
         # Add button layout to main layout
@@ -112,17 +119,31 @@ class CodingHelperTab(QWidget):
                     widget.setVisible(checked)
 
     def select_folder(self):
+        # Change button style to indicate active state
+        self.folder_btn.setStyleSheet(active_button_style)
+        # Revert to default style after 100 milliseconds
+        QTimer.singleShot(100, lambda: self.folder_btn.setStyleSheet(default_button_style))
+
         directory = QFileDialog.getExistingDirectory(None, "Select a folder:")
         if directory:
             self.file_system_model.setRootPath(directory)
             self.tree_view.setRootIndex(self.file_system_model.index(directory))
 
     def summarize_files(self):
+        # Change button style to indicate active state
+        self.summarize_btn.setStyleSheet(active_button_style)
+        # Revert to default style after 100 milliseconds
+        QTimer.singleShot(100, lambda: self.summarize_btn.setStyleSheet(default_button_style))
+
         indexes = self.tree_view.selectionModel().selectedRows()
         summarized_text = ""
         ignored_dirs = [dir_name.strip() for dir_name in self.ignored_dirs_edit.text().split(",")]
 
         root_path = self.file_system_model.filePath(self.tree_view.rootIndex())
+        if not root_path or not os.path.exists(root_path):
+            QMessageBox.information(self, "Information", "Please select a folder before summarizing files.")
+            return
+        
         summarized_text += self.get_tree_structure(root_path, ignored_dirs) + "\n\n"
 
         for index in indexes:
@@ -158,34 +179,66 @@ class CodingHelperTab(QWidget):
     def copy_to_clipboard(self):
         clipboard = QApplication.clipboard()
         clipboard.setText(self.text_edit.toPlainText())
+        # Change button style to indicate active state
+        self.copy_btn.setStyleSheet(active_button_style)
+
+        # Revert to default style after 100 milliseconds
+        QTimer.singleShot(100, lambda: self.copy_btn.setStyleSheet(default_button_style))
 
     def update_char_count(self):
         char_count = len(self.text_edit.toPlainText())
         self.char_count_label.setText(f"Character Count: {char_count}")
 
     def close_tab(self):
+        # Change button style to indicate active state
+        self.close_btn.setStyleSheet(active_button_style)
+        # Revert to default style after 100 milliseconds
+        QTimer.singleShot(100, lambda: self.close_btn.setStyleSheet(default_button_style))
+
         index = tab_widget.indexOf(self)
         tab_widget.removeTab(index)
 
     def save_to_json(self):
+        # Change button style to indicate active state
+        self.save_json_btn.setStyleSheet(active_button_style)
+
+        # Revert to default style after 100 milliseconds
+        QTimer.singleShot(100, lambda: self.save_json_btn.setStyleSheet(default_button_style))
         data = {
             "start_text": self.start_text_edit.toPlainText(),
             "end_text": self.end_text_edit.toPlainText()
         }
         filename, _ = QFileDialog.getSaveFileName(self, "Save File", "", "JSON Files (*.json)")
         if filename:
-            with open(filename, 'w') as file:
-                json.dump(data, file, indent=4)
+            try:
+                with open(filename, 'w') as file:
+                    json.dump(data, file, indent=4)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
 
     def load_from_json(self):
+        # Change button style to indicate active state
+        self.load_json_btn.setStyleSheet(active_button_style)
+        # Revert to default style after 100 milliseconds
+        QTimer.singleShot(100, lambda: self.load_json_btn.setStyleSheet(default_button_style))
+
         filename, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
         if filename:
-            with open(filename, 'r') as file:
-                data = json.load(file)
-                self.start_text_edit.setText(data.get("start_text", ""))
-                self.end_text_edit.setText(data.get("end_text", ""))
+            try:
+                with open(filename, 'r') as file:
+                    data = json.load(file)
+                    self.start_text_edit.setText(data.get("start_text", ""))
+                    self.end_text_edit.setText(data.get("end_text", ""))
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+
 
 def create_new_tab():
+    # Change button style to indicate active state
+    new_tab_button.setStyleSheet(active_button_style)
+    # Revert to default style after 100 milliseconds
+    QTimer.singleShot(100, lambda: new_tab_button.setStyleSheet(default_button_style))
+
     global tab_widget
     new_tab = CodingHelperTab()
     tab_widget.addTab(new_tab, f"Session {tab_widget.count() + 1}")
@@ -231,6 +284,25 @@ app.setStyleSheet("""
         padding: 2px;
     }
 """)
+
+active_button_style = """
+QPushButton {
+    background-color: #0090FF; /* Blue background */
+    color: white;             /* White text */
+}
+"""
+
+default_button_style = """
+QPushButton {
+    background-color: #f0f0f0; /* Default background */
+    border: 1px solid #dcdcdc; /* Default border */
+    padding: 5px;
+    border-radius: 2px;
+}
+QPushButton:hover {
+    background-color: #e8e8e8; /* Hover background */
+}
+"""
 
 # Initialize with one tab
 create_new_tab()
