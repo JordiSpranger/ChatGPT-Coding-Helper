@@ -18,6 +18,15 @@ class CodingHelperTab(QWidget):
         self.file_selection_group.setChecked(True)
         file_selection_layout = QVBoxLayout()
 
+        # Add Save and Load Buttons
+        self.save_json_btn = QPushButton("Save Texts to JSON")
+        self.save_json_btn.clicked.connect(self.save_to_json)
+        self.layout.addWidget(self.save_json_btn)
+
+        self.load_json_btn = QPushButton("Load Texts from JSON")
+        self.load_json_btn.clicked.connect(self.load_from_json)
+        self.layout.addWidget(self.load_json_btn)
+
         self.folder_btn = QPushButton("Select Folder")
         self.folder_btn.clicked.connect(self.select_folder)
         file_selection_layout.addWidget(self.folder_btn)
@@ -29,6 +38,8 @@ class CodingHelperTab(QWidget):
         ignored_dirs_layout.addWidget(ignored_dirs_label)
         ignored_dirs_layout.addWidget(self.ignored_dirs_edit)
         file_selection_layout.addLayout(ignored_dirs_layout)
+        # Default .git in ignored directories
+        self.ignored_dirs_edit.setText(".git")  # Set .git as the default ignored directory
 
         # Set up the file system model and tree view
         self.file_system_model = QFileSystemModel()
@@ -84,6 +95,11 @@ class CodingHelperTab(QWidget):
         self.text_edit.textChanged.connect(self.update_char_count)
         summary_layout.addWidget(self.char_count_label)
 
+        # Add Close Session Button
+        self.close_btn = QPushButton("Close Session")
+        self.close_btn.clicked.connect(self.close_tab)
+        self.layout.addWidget(self.close_btn)
+
     def select_folder(self):
         directory = QFileDialog.getExistingDirectory(None, "Select a folder:")
         if directory:
@@ -136,6 +152,28 @@ class CodingHelperTab(QWidget):
         char_count = len(self.text_edit.toPlainText())
         self.char_count_label.setText(f"Character Count: {char_count}")
 
+    def close_tab(self):
+        index = tab_widget.indexOf(self)
+        tab_widget.removeTab(index)
+
+    def save_to_json(self):
+        data = {
+            "start_text": self.start_text_edit.toPlainText(),
+            "end_text": self.end_text_edit.toPlainText()
+        }
+        filename, _ = QFileDialog.getSaveFileName(self, "Save File", "", "JSON Files (*.json)")
+        if filename:
+            with open(filename, 'w') as file:
+                json.dump(data, file, indent=4)
+
+    def load_from_json(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
+        if filename:
+            with open(filename, 'r') as file:
+                data = json.load(file)
+                self.start_text_edit.setText(data.get("start_text", ""))
+                self.end_text_edit.setText(data.get("end_text", ""))
+
 def create_new_tab():
     global tab_widget
     new_tab = CodingHelperTab()
@@ -164,6 +202,24 @@ main_layout.addWidget(tab_widget)
 new_tab_button = QPushButton("New Session")
 new_tab_button.clicked.connect(create_new_tab)
 main_layout.addWidget(new_tab_button)
+
+app.setStyleSheet("""
+    QPushButton {
+        background-color: #f0f0f0;
+        border: 1px solid #dcdcdc;
+        padding: 5px;
+        border-radius: 2px;
+    }
+    QPushButton:hover {
+        background-color: #e8e8e8;
+    }
+    QGroupBox {
+        font-weight: bold;
+    }
+    QLabel, QLineEdit, QTextEdit {
+        padding: 2px;
+    }
+""")
 
 # Initialize with one tab
 create_new_tab()
