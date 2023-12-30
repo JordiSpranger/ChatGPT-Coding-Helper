@@ -5,8 +5,25 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QDir
 from PyQt5.QtGui import QIcon
 import os
+import json
 
+def save_to_json():
+    data = {
+        "start_text": start_text_edit.toPlainText(),
+        "end_text": end_text_edit.toPlainText()
+    }
+    filename, _ = QFileDialog.getSaveFileName(window, "Save File", "", "JSON Files (*.json)")
+    if filename:
+        with open(filename, 'w') as file:
+            json.dump(data, file, indent=4)
 
+def load_from_json():
+    filename, _ = QFileDialog.getOpenFileName(window, "Open File", "", "JSON Files (*.json)")
+    if filename:
+        with open(filename, 'r') as file:
+            data = json.load(file)
+            start_text_edit.setText(data.get("start_text", ""))
+            end_text_edit.setText(data.get("end_text", ""))
 
 def get_tree_structure(path, ignored_dirs, indent=0):
     """Recursively retrieves the tree structure of the directory."""
@@ -97,6 +114,16 @@ window.setToolTip("This tool streamlines the process of working with LLMs like C
                   "used for providing context, and the end text can be used for instructions for the \n"
                   "next change.")
 layout = QVBoxLayout(window)
+
+# Add buttons for saving and loading
+save_json_btn = QPushButton("Save to JSON")
+save_json_btn.clicked.connect(save_to_json)
+load_json_btn = QPushButton("Load from JSON")
+load_json_btn.clicked.connect(load_from_json)
+
+# Add the buttons to the layout
+layout.addWidget(save_json_btn)
+layout.addWidget(load_json_btn)
 
 
 # Create collapsible file selection group
