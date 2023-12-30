@@ -1,101 +1,147 @@
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QTreeView, QTextEdit, QFileDialog, QFileSystemModel, QGroupBox, QScrollArea
+    QPushButton, QTreeView, QTextEdit, QFileDialog, QFileSystemModel, QGroupBox, QTabWidget
 )
 from PyQt5.QtCore import QDir
 from PyQt5.QtGui import QIcon
 import os
 import json
 
-def save_to_json():
-    data = {
-        "start_text": start_text_edit.toPlainText(),
-        "end_text": end_text_edit.toPlainText()
-    }
-    filename, _ = QFileDialog.getSaveFileName(window, "Save File", "", "JSON Files (*.json)")
-    if filename:
-        with open(filename, 'w') as file:
-            json.dump(data, file, indent=4)
+class CodingHelperTab(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.layout = QVBoxLayout(self)
 
-def load_from_json():
-    filename, _ = QFileDialog.getOpenFileName(window, "Open File", "", "JSON Files (*.json)")
-    if filename:
-        with open(filename, 'r') as file:
-            data = json.load(file)
-            start_text_edit.setText(data.get("start_text", ""))
-            end_text_edit.setText(data.get("end_text", ""))
+        # Create collapsible file selection group
+        self.file_selection_group = QGroupBox("File Selection")
+        self.file_selection_group.setCheckable(True)
+        self.file_selection_group.setChecked(True)
+        file_selection_layout = QVBoxLayout()
 
-def get_tree_structure(path, ignored_dirs, indent=0):
-    """Recursively retrieves the tree structure of the directory."""
-    items = os.listdir(path)
-    tree = ""
-    
-    for item in items:
-        # Skip ignored directories
-        if item in ignored_dirs:
-            continue
-        
-        tree += '    ' * indent + item + '\n'
-        item_path = os.path.join(path, item)
-        
-        if os.path.isdir(item_path):
-            tree += get_tree_structure(item_path, ignored_dirs, indent + 1)
-            
-    return tree
+        self.folder_btn = QPushButton("Select Folder")
+        self.folder_btn.clicked.connect(self.select_folder)
+        file_selection_layout.addWidget(self.folder_btn)
 
+        # Input for ignored directories
+        ignored_dirs_layout = QHBoxLayout()
+        ignored_dirs_label = QLabel("Ignored Directories (comma separated):")
+        self.ignored_dirs_edit = QLineEdit()
+        ignored_dirs_layout.addWidget(ignored_dirs_label)
+        ignored_dirs_layout.addWidget(self.ignored_dirs_edit)
+        file_selection_layout.addLayout(ignored_dirs_layout)
 
-def select_folder():
-    directory = QFileDialog.getExistingDirectory(None, "Select a folder:")
-    if directory:
-        # Set the directory for QFileSystemModel
-        file_system_model.setRootPath(directory)
-        tree_view.setRootIndex(file_system_model.index(directory))
+        # Set up the file system model and tree view
+        self.file_system_model = QFileSystemModel()
+        self.file_system_model.setFilter(QDir.AllDirs | QDir.NoDotAndDotDot | QDir.Files)
+        self.tree_view = QTreeView()
+        self.tree_view.setModel(self.file_system_model)
+        self.tree_view.setSelectionMode(QTreeView.MultiSelection)
+        file_selection_layout.addWidget(self.tree_view)
 
+        self.file_selection_group.setLayout(file_selection_layout)
+        self.layout.addWidget(self.file_selection_group)
 
-def summarize_files():
-    indexes = tree_view.selectionModel().selectedRows()
-    summarized_text = ""
+        # Create collapsible start text group
+        self.start_text_group = QGroupBox("Summary Start Text")
+        self.start_text_group.setCheckable(True)
+        self.start_text_group.setChecked(True)
+        start_text_layout = QVBoxLayout()
+        self.start_text_edit = QTextEdit()
+        start_text_layout.addWidget(self.start_text_edit)
+        self.start_text_group.setLayout(start_text_layout)
+        self.layout.addWidget(self.start_text_group)
 
-    # Fetch the ignored directories from the UI and parse them
-    ignored_dirs = [dir_name.strip() for dir_name in ignored_dirs_edit.text().split(",")]
+        # Create collapsible end text group
+        self.end_text_group = QGroupBox("Summary End Text")
+        self.end_text_group.setCheckable(True)
+        self.end_text_group.setChecked(True)
+        end_text_layout = QVBoxLayout()
+        self.end_text_edit = QTextEdit()
+        end_text_layout.addWidget(self.end_text_edit)
+        self.end_text_group.setLayout(end_text_layout)
+        self.layout.addWidget(self.end_text_group)
 
-    # Include the complete tree structure at the beginning
-    root_path = file_system_model.filePath(tree_view.rootIndex())
-    summarized_text += get_tree_structure(root_path, ignored_dirs) + "\n\n"
-    
-    for index in indexes:
-        path = file_system_model.filePath(index)
-        
-        if os.path.isfile(path):
-            with open(path, "r", encoding="utf-8", errors="ignore") as file:
-                content = file.read()
-                summarized_text += f"{path}\n{content}\n\n"
-        else:
-            for i in range(file_system_model.rowCount(index)):
-                child_index = file_system_model.index(i, 0, index)
-                child_path = file_system_model.filePath(child_index)
-                if os.path.isfile(child_path):  # Check if it's a file
-                    with open(child_path, "r", encoding="utf-8", errors="ignore") as file:
-                        content = file.read()
-                        summarized_text += f"{child_path}\n{content}\n\n"
-    
-    # Wrap the summarized text with the start and end texts
-    summarized_text = start_text_edit.toPlainText() + "\n\n" + summarized_text + "\n\n" + end_text_edit.toPlainText()
+        # Create collapsible summary group
+        self.summary_group = QGroupBox("Summary")
+        self.summary_group.setCheckable(True)
+        self.summary_group.setChecked(True)
+        summary_layout = QVBoxLayout()
+        self.summarize_btn = QPushButton("Summarize Files")
+        self.summarize_btn.clicked.connect(self.summarize_files)
+        summary_layout.addWidget(self.summarize_btn)
+        self.text_edit = QTextEdit()
+        summary_layout.addWidget(self.text_edit)
+        self.summary_group.setLayout(summary_layout)
+        self.layout.addWidget(self.summary_group)
 
-    text_edit.setText(summarized_text)
-    text_edit.setText(summarized_text)
+        # Add a button for copying the summarized text to clipboard
+        self.copy_btn = QPushButton("Copy to Clipboard")
+        self.copy_btn.clicked.connect(self.copy_to_clipboard)
+        summary_layout.addWidget(self.copy_btn)
 
+        # Character count label
+        self.char_count_label = QLabel("Character Count: 0")
+        self.text_edit.textChanged.connect(self.update_char_count)
+        summary_layout.addWidget(self.char_count_label)
 
-def copy_to_clipboard():
-    clipboard = QApplication.clipboard()
-    clipboard.setText(text_edit.toPlainText())
+    def select_folder(self):
+        directory = QFileDialog.getExistingDirectory(None, "Select a folder:")
+        if directory:
+            self.file_system_model.setRootPath(directory)
+            self.tree_view.setRootIndex(self.file_system_model.index(directory))
 
+    def summarize_files(self):
+        indexes = self.tree_view.selectionModel().selectedRows()
+        summarized_text = ""
+        ignored_dirs = [dir_name.strip() for dir_name in self.ignored_dirs_edit.text().split(",")]
 
-def update_char_count():
-    char_count = len(text_edit.toPlainText())
-    char_count_label.setText(f"Character Count: {char_count}")
+        root_path = self.file_system_model.filePath(self.tree_view.rootIndex())
+        summarized_text += self.get_tree_structure(root_path, ignored_dirs) + "\n\n"
 
-# Create the application
+        for index in indexes:
+            path = self.file_system_model.filePath(index)
+            if os.path.isfile(path):
+                with open(path, "r", encoding="utf-8", errors="ignore") as file:
+                    content = file.read()
+                    summarized_text += f"{path}\n{content}\n\n"
+            else:
+                for i in range(self.file_system_model.rowCount(index)):
+                    child_index = self.file_system_model.index(i, 0, index)
+                    child_path = self.file_system_model.filePath(child_index)
+                    if os.path.isfile(child_path):
+                        with open(child_path, "r", encoding="utf-8", errors="ignore") as file:
+                            content = file.read()
+                            summarized_text += f"{child_path}\n{content}\n\n"
+
+        summarized_text = self.start_text_edit.toPlainText() + "\n\n" + summarized_text + "\n\n" + self.end_text_edit.toPlainText()
+        self.text_edit.setText(summarized_text)
+
+    def get_tree_structure(self, path, ignored_dirs, indent=0):
+        items = os.listdir(path)
+        tree = ""
+        for item in items:
+            if item in ignored_dirs:
+                continue
+            tree += '    ' * indent + item + '\n'
+            item_path = os.path.join(path, item)
+            if os.path.isdir(item_path):
+                tree += self.get_tree_structure(item_path, ignored_dirs, indent + 1)
+        return tree
+
+    def copy_to_clipboard(self):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(self.text_edit.toPlainText())
+
+    def update_char_count(self):
+        char_count = len(self.text_edit.toPlainText())
+        self.char_count_label.setText(f"Character Count: {char_count}")
+
+def create_new_tab():
+    global tab_widget
+    new_tab = CodingHelperTab()
+    tab_widget.addTab(new_tab, f"Session {tab_widget.count() + 1}")
+
+# Application setup
 app = QApplication([])
 
 # Set the application icon
@@ -103,120 +149,24 @@ icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'graphics/i
 app.setWindowIcon(QIcon(icon_path))
 
 # Create the main window
-window = QWidget()
-window.setWindowTitle("ChatGPT Coding Helper")
-window.setToolTip("This tool streamlines the process of working with LLMs like ChatGPT for coding. \n"
-                  "You can select a directory, list its files (including subdirectories), \n"
-                  "and then select multiple files from this list. Summarizing their contents \n"
-                  "into a single view makes it easier to iteratively request changes to scripts. \n"
-                  "By providing context and updates, you can send a new request with the necessary \n"
-                  "context for the next change, ensuring efficient coding. The start text can be \n"
-                  "used for providing context, and the end text can be used for instructions for the \n"
-                  "next change.")
-layout = QVBoxLayout(window)
+main_window = QWidget()
+main_window.setWindowTitle("ChatGPT Coding Helper")
+main_window.resize(1000, 800)
 
-# Add buttons for saving and loading
-save_json_btn = QPushButton("Save to JSON")
-save_json_btn.clicked.connect(save_to_json)
-load_json_btn = QPushButton("Load from JSON")
-load_json_btn.clicked.connect(load_from_json)
+# Main layout for the window
+main_layout = QVBoxLayout(main_window)
 
-# Add the buttons to the layout
-layout.addWidget(save_json_btn)
-layout.addWidget(load_json_btn)
+# Initialize tab_widget as a global variable
+tab_widget = QTabWidget()
+main_layout.addWidget(tab_widget)
 
+# Add a button to create new tabs
+new_tab_button = QPushButton("New Session")
+new_tab_button.clicked.connect(create_new_tab)
+main_layout.addWidget(new_tab_button)
 
-# Create collapsible file selection group
-file_selection_group = QGroupBox("File Selection")
-file_selection_group.setCheckable(True)
-file_selection_group.setChecked(True)
-file_selection_group.toggled.connect(lambda: scroll_file_selection.setVisible(file_selection_group.isChecked()))
+# Initialize with one tab
+create_new_tab()
 
-file_selection_layout = QVBoxLayout()
-
-folder_btn = QPushButton("Select Folder")
-folder_btn.clicked.connect(select_folder)
-file_selection_layout.addWidget(folder_btn)
-
-# Input for ignored directories
-ignored_dirs_layout = QHBoxLayout()
-ignored_dirs_label = QLabel("Ignored Directories (comma separated):")
-ignored_dirs_edit = QLineEdit()
-ignored_dirs_layout.addWidget(ignored_dirs_label)
-ignored_dirs_layout.addWidget(ignored_dirs_edit)
-file_selection_layout.addLayout(ignored_dirs_layout)
-
-# Use QTreeView with QFileSystemModel to display file hierarchy
-file_system_model = QFileSystemModel()
-file_system_model.setFilter(QDir.AllDirs | QDir.NoDotAndDotDot | QDir.Files)
-tree_view = QTreeView()
-tree_view.setModel(file_system_model)
-tree_view.setSelectionMode(QTreeView.MultiSelection)
-file_selection_layout.addWidget(tree_view)
-
-file_selection_area = QWidget()
-file_selection_area.setLayout(file_selection_layout)
-scroll_file_selection = QScrollArea()
-scroll_file_selection.setWidgetResizable(True)
-scroll_file_selection.setWidget(file_selection_area)
-
-# Create collapsible start text group
-start_text_group = QGroupBox("Summary Start Text")
-start_text_group.setCheckable(True)
-start_text_group.setChecked(True)
-start_text_edit = QTextEdit()
-start_text_layout = QVBoxLayout()
-start_text_layout.addWidget(start_text_edit)
-start_text_group.setLayout(start_text_layout)
-
-# Create collapsible end text group
-end_text_group = QGroupBox("Summary End Text")
-end_text_group.setCheckable(True)
-end_text_group.setChecked(True)
-end_text_edit = QTextEdit()
-end_text_layout = QVBoxLayout()
-end_text_layout.addWidget(end_text_edit)
-end_text_group.setLayout(end_text_layout)
-
-# Create collapsible summary group
-summary_group = QGroupBox("Summary")
-summary_group.setCheckable(True)
-summary_group.setChecked(True)
-summary_group.toggled.connect(lambda: scroll_summary.setVisible(summary_group.isChecked()))
-
-summary_layout = QVBoxLayout()
-
-summarize_btn = QPushButton("Summarize Files")
-summarize_btn.clicked.connect(summarize_files)
-summary_layout.addWidget(summarize_btn)
-
-text_edit = QTextEdit()
-summary_layout.addWidget(text_edit)
-
-summary_area = QWidget()
-summary_area.setLayout(summary_layout)
-scroll_summary = QScrollArea()
-scroll_summary.setWidgetResizable(True)
-scroll_summary.setWidget(summary_area)
-
-# Add a button for copying the summarized text to clipboard
-copy_btn = QPushButton("Copy to Clipboard")
-copy_btn.clicked.connect(copy_to_clipboard)
-summary_layout.addWidget(copy_btn)
-
-# Add widgets to main layout
-layout.addWidget(file_selection_group)
-layout.addWidget(scroll_file_selection)
-layout.addWidget(start_text_group)
-layout.addWidget(end_text_group)
-layout.addWidget(summary_group)
-layout.addWidget(scroll_summary)
-char_count_label = QLabel("Character Count: 0")
-text_edit.textChanged.connect(update_char_count)
-summary_layout.addWidget(char_count_label)
-
-# Set the initial state of the collapsible groups
-window.resize(1000, 800)  # Set an initial window size
-window.show()
-
+main_window.show()
 app.exec_()
